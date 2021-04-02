@@ -1,0 +1,80 @@
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+
+nameanddate = '3363Rsnip 04.02.2021'
+f1 = r"C:\iblrig_data\Subjects\3363Rsnip\2021-04-02\001\raw_behavior_data\_iblrig_taskData.raw.jsonable"  # setting a variable equal to the raw string of the whole file location
+# you need to add '.jsonable' after the file location name for it be found while defining this variable
+m1d1 = open(f1, 'rt')  # setting a variable to open file
+
+location = r"C:/iblrig_data\Subjects\3363Rsnip\2021-04-02\001\raw_behavior_data\3363Rsnip.04.02.21.trialdur.png"
+
+# json.load(m1d1) #parsed/loaded data within the file
+
+lines = m1d1.readlines()  # this will read all the lines in the file, must be stored in a variable
+
+m1d1.close()  # close the file
+
+trialstart = []
+# trialend = []
+triallength = []
+nogo = []
+
+# %% (creates a cell which you can run only that section)
+out = r"C:/iblrig_data\Subjects\3363Rsnip\2021-04-02\001\raw_behavior_data\trialdur.txt"  # or .csv for excel
+
+output = open(out, 'wt')  # create new file to store the found data
+
+for i, line in enumerate(lines):  # i is now the line number due to 'enumerate'
+    parsed = json.loads(line)  # storing each loaded line of data as the variable 'parsed'
+    min = ((parsed['behavior_data']['Trial start timestamp']) / 60)
+    # converting the start time stamp from seconds to minutes
+    trialstart.append(min)  # append each line to the data list
+    # output.write('{0}'.format(parsed['behavior_data']['Trial start timestamp'])) #write this data to the file, and format into a string
+    # trialend.append(parsed['behavior_data']['Trial end timestamp'])
+    # output.write('{0}'.format(parsed['behavior_data']['Trial end timestamp']))
+    L = ((parsed['behavior_data']['Trial end timestamp']) - (parsed['behavior_data']['Trial start timestamp']))
+    triallength.append(L)
+    nogo.append(parsed['behavior_data']['States timestamps']['no_go'])
+    # set L equal to trial end-trial start so it's value is trial length
+    output.write('{0},{1},{2},{3}\n'.format(
+        parsed['behavior_data']['Trial start timestamp'],
+        parsed['behavior_data']['Trial end timestamp'],
+        L,
+        parsed['behavior_data']['States timestamps']['no_go']))
+
+output.close()  # close file
+
+nogo = np.array(nogo)  # make nogo an array rather than a list
+nogo = nogo.reshape((nogo.shape[0], 2))  # make nogo 2 dimensional
+miss_trial = np.invert(np.isnan(nogo[:,
+                                0])).sum()  # take the sum of all trials that are miss trials by asking is it nan t or f and then inverting the answers where t =1 and f = 0
+
+## Here we make graphs
+# make an empty object to insert data into
+fig, ax1 = plt.subplots()
+# add axes
+x = np.arange(0, 90)
+ax1.set_xlim([0, 90])
+y = np.arange(0, 65)
+#ax1.semilogy(10, [0, 65])
+# plot data
+ax1.semilogy(trialstart, triallength, 'b-')
+# ax1.plot(trialstart, triallength, 'b-')
+# labels
+ax1.set_xlabel('time (min)')
+ax1.set_ylabel('trial dur (s)')
+plt.title(nameanddate)
+plt.title(miss_trial, loc='right')
+# show graph
+plt.show()
+plt.savefig(location)
+print(miss_trial)
+
+# 1. open file
+# 2. load the data
+# 3. process / analyze the data
+# 3a. no gos
+# 3b. trial start and end time
+# 4. close
+# 5. print out results / store results / plot results
